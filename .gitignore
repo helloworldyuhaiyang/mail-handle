@@ -56,3 +56,4 @@ tmp/
 temp/
 main
 config/gmail-credentials.json
+__debug_bin*
