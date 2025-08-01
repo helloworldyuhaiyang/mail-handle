@@ -105,6 +105,8 @@ func (s *Scheduler) run() {
 			if err != nil {
 				logrus.Errorf("Failed to find target email: %v", err)
 				return
+			} else {
+				logrus.Infof("Found target email: %s", targetEmail)
 			}
 
 			// 构造转发邮件内容
