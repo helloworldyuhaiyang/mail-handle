@@ -11,5 +11,5 @@ func NewForwardTargetsRepo(db *gorm.DB) *ForwardTargetsRepo {
 }
 
 func (r *ForwardTargetsRepo) FindEmailByName(targetName string) (string, error) {
-	panic("not implemented")
+	return "helloworldyang9@gmail.com", nil
 }

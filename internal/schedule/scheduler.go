@@ -4,8 +4,8 @@ import (
 	"runtime"
 
 	"github.com/helloworldyuhaiyang/mail-handle/internal/mail"
-	"github.com/helloworldyuhaiyang/mail-handle/pkg"
 	"github.com/helloworldyuhaiyang/mail-handle/internal/repo"
+	"github.com/helloworldyuhaiyang/mail-handle/pkg"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -111,11 +111,15 @@ func (s *Scheduler) run() {
 			if err := s.mailService.SendForward(msg, targetEmail); err != nil {
 				logrus.Errorf("Failed to send forward: %v", err)
 				return
+			} else {
+				logrus.Infof("Sent forward, subject: %s, id: %s, target: %s", msg.Subject, msg.ID, targetEmail)
 			}
 
 			// 标记邮件为已读(转发的邮件)
 			if err := s.mailService.MarkAsRead(msg.ID); err != nil {
 				logrus.Errorf("Failed to mark email as read: %v", err)
+			} else {
+				logrus.Infof("Marked email as read, subject: %s, id: %s", msg.Subject, msg.ID)
 			}
 		}()
 	}

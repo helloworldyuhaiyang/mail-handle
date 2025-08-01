@@ -2,6 +2,7 @@ package gmail
 
 import (
 	"context"
+	"encoding/base64"
 	"os"
 	"strings"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/helloworldyuhaiyang/mail-handle/internal/mail"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/api/gmail/v1"
 )
 
 func TestClient_ParseSubject(t *testing.T) {
@@ -178,6 +180,22 @@ func TestClient_ExtractBody(t *testing.T) {
 	t.Run("nil payload", func(t *testing.T) {
 		body := client.extractBody(nil)
 		assert.Empty(t, body)
+	})
+
+	t.Run("base64 decoded content", func(t *testing.T) {
+		// Test with base64 encoded content
+		testContent := "帮我转发给海洋好吗"
+		encodedContent := base64.URLEncoding.EncodeToString([]byte(testContent))
+
+		// Create a mock payload
+		payload := &gmail.MessagePart{
+			Body: &gmail.MessagePartBody{
+				Data: encodedContent,
+			},
+		}
+
+		body := client.extractBody(payload)
+		assert.Equal(t, testContent, body)
 	})
 }
 

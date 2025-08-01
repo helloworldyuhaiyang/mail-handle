@@ -40,7 +40,7 @@ func NewClient(ctx context.Context, credentialsFile, tokenFile string) (*Client,
 	}
 
 	// Create OAuth2 config
-	config, err := google.ConfigFromJSON(credentials, gmail.GmailReadonlyScope, gmail.GmailSendScope)
+	config, err := google.ConfigFromJSON(credentials, gmail.GmailReadonlyScope, gmail.GmailSendScope, gmail.GmailModifyScope)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse client secret file to config: %v", err)
 	}
@@ -226,7 +226,16 @@ func (c *Client) extractBody(payload *gmail.MessagePart) string {
 
 	// If payload has body data, decode it
 	if payload.Body != nil && payload.Body.Data != "" {
-		return payload.Body.Data
+		decoded, err := base64.URLEncoding.DecodeString(payload.Body.Data)
+		if err != nil {
+			// If URL encoding fails, try standard base64
+			decoded, err = base64.StdEncoding.DecodeString(payload.Body.Data)
+			if err != nil {
+				// If decoding fails, return the raw data
+				return payload.Body.Data
+			}
+		}
+		return string(decoded)
 	}
 
 	// If payload has parts, look for text/plain part
@@ -234,7 +243,16 @@ func (c *Client) extractBody(payload *gmail.MessagePart) string {
 		for _, part := range payload.Parts {
 			if part.MimeType == "text/plain" {
 				if part.Body != nil && part.Body.Data != "" {
-					return part.Body.Data
+					decoded, err := base64.URLEncoding.DecodeString(part.Body.Data)
+					if err != nil {
+						// If URL encoding fails, try standard base64
+						decoded, err = base64.StdEncoding.DecodeString(part.Body.Data)
+						if err != nil {
+							// If decoding fails, return the raw data
+							return part.Body.Data
+						}
+					}
+					return string(decoded)
 				}
 			}
 		}

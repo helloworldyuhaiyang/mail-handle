@@ -1,4 +1,6 @@
 # 初始化
+## 需要先申请Google OAuth2.0 凭证
+
 ## 启动 
 mail-handle run
 
