@@ -26,6 +26,13 @@ func main() {
 					return RunServer(c, mailApp)
 				},
 			},
+			{
+				Name:  "auth",
+				Usage: "Authenticate with Gmail OAuth2",
+				Action: func(c *cli.Context) error {
+					return AuthenticateGmail(c, mailApp)
+				},
+			},
 		}),
 	)
 	err := mailApp.Start()
@@ -107,6 +114,53 @@ func RunServer(c *cli.Context, mailApp *app.App) error {
 	return nil
 }
 
+// AuthenticateGmail handles the Gmail OAuth2 authentication flow
+func AuthenticateGmail(c *cli.Context, mailApp *app.App) error {
+	var gmailConfig GmailConfig
+	err := mailApp.Config().UnmarshalKey("gmail", &gmailConfig)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal gmail config: %v", err)
+	}
+
+	gmailClient, err := gmail.NewClient(context.Background(), gmailConfig.CredentialsFile, gmailConfig.TokenFile)
+	if err != nil {
+		return fmt.Errorf("failed to initialize Gmail client: %v", err)
+	}
+	defer gmailClient.Close()
+
+	// Check if already authenticated
+	if gmailClient.IsAuthenticated() {
+		logrus.Info("Gmail client is already authenticated")
+		return nil
+	}
+
+	// Get authorization URL
+	authURL := gmailClient.GetAuthURL()
+	logrus.Info("Please visit this URL to authorize the application:")
+	logrus.Info(authURL)
+	logrus.Info("")
+	logrus.Info("After authorization, you will receive an authorization code.")
+	logrus.Info("Please enter the authorization code:")
+
+	// Read authorization code from stdin
+	var authCode string
+	fmt.Print("Authorization code: ")
+	fmt.Scanln(&authCode)
+
+	if authCode == "" {
+		return fmt.Errorf("authorization code is required")
+	}
+
+	// Exchange authorization code for token
+	err = gmailClient.Callback(authCode)
+	if err != nil {
+		return fmt.Errorf("failed to exchange authorization code: %v", err)
+	}
+
+	logrus.Info("Authentication successful! Token has been saved.")
+	return nil
+}
+
 type DBConfig struct {
 	DSN string `mapstructure:"dsn"`
 }
@@ -136,6 +190,15 @@ func initGmailClient(mailApp *app.App) (*gmail.Client, error) {
 	gmailClient, err := gmail.NewClient(context.Background(), gmailConfig.CredentialsFile, gmailConfig.TokenFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Gmail client: %v", err)
+	}
+
+	// Check if authentication is needed
+	if needsAuth, authURL := gmailClient.AuthenticateIfNeeded(); needsAuth {
+		logrus.Warn("Gmail client needs authentication")
+		logrus.Info(authURL)
+		logrus.Info("After authorization, you can restart the application")
+	} else {
+		logrus.Info("Gmail client is authenticated")
 	}
 
 	logrus.Info("gmail client initialized successfully")
