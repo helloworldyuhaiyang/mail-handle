@@ -2,9 +2,11 @@ package gmail
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -155,17 +157,176 @@ func (c *Client) AuthenticateIfNeeded() (bool, string) {
 }
 
 func (c *Client) FetchUnreadMessages() ([]*mail.Message, error) {
-	panic("not implemented") // TODO: Implement
+	if !c.IsAuthenticated() {
+		return nil, fmt.Errorf("client not authenticated")
+	}
+
+	// Query for unread messages
+	query := "is:unread"
+
+	// List messages
+	call := c.service.Users.Messages.List("me").Q(query)
+	response, err := call.Do()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list messages: %v", err)
+	}
+
+	var messages []*mail.Message
+
+	// Process each message
+	for _, msg := range response.Messages {
+		// Get full message details
+		message, err := c.service.Users.Messages.Get("me", msg.Id).Format("full").Do()
+		if err != nil {
+			continue // Skip messages that can't be retrieved
+		}
+
+		// Parse message headers
+		subject := ""
+		from := ""
+		to := ""
+		date := ""
+
+		for _, header := range message.Payload.Headers {
+			switch header.Name {
+			case "Subject":
+				subject = header.Value
+			case "From":
+				from = header.Value
+			case "To":
+				to = header.Value
+			case "Date":
+				date = header.Value
+			}
+		}
+
+		// Extract body
+		body := c.extractBody(message.Payload)
+
+		mailMessage := &mail.Message{
+			ID:      message.Id,
+			Subject: subject,
+			From:    from,
+			To:      to,
+			Body:    body,
+			Date:    date,
+		}
+
+		messages = append(messages, mailMessage)
+	}
+
+	return messages, nil
+}
+
+// extractBody extracts the text body from Gmail message payload
+func (c *Client) extractBody(payload *gmail.MessagePart) string {
+	if payload == nil {
+		return ""
+	}
+
+	// If payload has body data, decode it
+	if payload.Body != nil && payload.Body.Data != "" {
+		return payload.Body.Data
+	}
+
+	// If payload has parts, look for text/plain part
+	if payload.Parts != nil {
+		for _, part := range payload.Parts {
+			if part.MimeType == "text/plain" {
+				if part.Body != nil && part.Body.Data != "" {
+					return part.Body.Data
+				}
+			}
+		}
+	}
+
+	return ""
 }
 
 func (c *Client) ParseSubject(subject string) (keyword string, targetName string, ok bool) {
-	panic("not implemented") // TODO: Implement
+	// Parse email subject format: "keyword - target_name"
+	// Example: "重要通知 - 张三" or "urgent - john"
+
+	if subject == "" {
+		return "", "", false
+	}
+
+	// Find the " - " separator (space-dash-space)
+	separator := "-"
+	index := strings.Index(subject, separator)
+	if index == -1 {
+		return "", "", false
+	}
+
+	// Extract keyword and target name
+	keyword = strings.TrimSpace(subject[:index])
+	targetName = strings.TrimSpace(subject[index+len(separator):])
+
+	// Return true if both keyword and targetName are found and not empty
+	return keyword, targetName, keyword != "" && targetName != ""
 }
 
 func (c *Client) SendForward(original *mail.Message, toEmail string) error {
-	panic("not implemented") // TODO: Implement
+	if !c.IsAuthenticated() {
+		return fmt.Errorf("client not authenticated")
+	}
+
+	if original == nil {
+		return fmt.Errorf("original message is nil")
+	}
+
+	if toEmail == "" {
+		return fmt.Errorf("target email is empty")
+	}
+
+	// Create email message in RFC 2822 format
+	// Note: Gmail API will automatically set the From field to the authenticated user's email
+	message := fmt.Sprintf("To: %s\r\n", toEmail)
+	message += fmt.Sprintf("Subject: Fwd: %s\r\n", original.Subject)
+	message += "\r\n"
+	message += "---------- Forwarded message ----------\r\n"
+	message += fmt.Sprintf("From: %s\r\n", original.From)
+	message += fmt.Sprintf("Date: %s\r\n", original.Date)
+	message += fmt.Sprintf("Subject: %s\r\n", original.Subject)
+	message += "\r\n"
+	message += original.Body
+
+	// Encode message in base64
+	encodedMessage := base64.URLEncoding.EncodeToString([]byte(message))
+
+	// Create Gmail message
+	gmailMessage := &gmail.Message{
+		Raw: encodedMessage,
+	}
+
+	// Send the message
+	_, err := c.service.Users.Messages.Send("me", gmailMessage).Do()
+	if err != nil {
+		return fmt.Errorf("failed to send message: %v", err)
+	}
+
+	return nil
 }
 
 func (c *Client) MarkAsRead(messageID string) error {
-	panic("not implemented") // TODO: Implement
+	if !c.IsAuthenticated() {
+		return fmt.Errorf("client not authenticated")
+	}
+
+	if messageID == "" {
+		return fmt.Errorf("message ID is empty")
+	}
+
+	// Create modification request to remove UNREAD label
+	modifyRequest := &gmail.ModifyMessageRequest{
+		RemoveLabelIds: []string{"UNREAD"},
+	}
+
+	// Apply the modification
+	_, err := c.service.Users.Messages.Modify("me", messageID, modifyRequest).Do()
+	if err != nil {
+		return fmt.Errorf("failed to mark message as read: %v", err)
+	}
+
+	return nil
 }

@@ -4,13 +4,15 @@ import (
 	"runtime"
 
 	"github.com/helloworldyuhaiyang/mail-handle/internal/mail"
+	"github.com/helloworldyuhaiyang/mail-handle/pkg"
 	"github.com/helloworldyuhaiyang/mail-handle/internal/repo"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
 type SchedulerConfig struct {
-	FetchInterval string `mapstructure:"fetch_interval"`
+	FetchInterval   string   `mapstructure:"fetch_interval"`
+	ForwardKeywords []string `mapstructure:"forward_keywords"`
 }
 
 type Scheduler struct {
@@ -75,6 +77,8 @@ func (s *Scheduler) run() {
 		return
 	}
 
+	logrus.Infof("Found unread emails number: %d", len(messages))
+
 	for _, msg := range messages {
 		// 为每个邮件处理添加单独的 panic 恢复
 		func() {
@@ -90,8 +94,11 @@ func (s *Scheduler) run() {
 			if !ok {
 				return // 格式不符，跳过
 			}
+			if !pkg.StringSliceContains(s.config.ForwardKeywords, keyword) {
+				return
+			}
 
-			logrus.Infof("Found keyword and target name: %s, %s", keyword, targetName)
+			logrus.Infof("Found keyword and target name:keyword: %s, target: %s", keyword, targetName)
 
 			// 通过转发对象名查询邮箱地址
 			targetEmail, err := s.targetRepo.FindEmailByName(targetName)
