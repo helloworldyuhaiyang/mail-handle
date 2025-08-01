@@ -1,0 +1,26 @@
+# Mail Handle System Configuration
+
+# Database Configuration
+database:
+  driver: "sqlite"
+  dsn: "mail_handle.db"
+
+# Gmail API Configuration
+gmail:
+  credentials_file: "credentials.json"
+  token_file: "token.json"
+
+# Scheduler Configuration
+scheduler:
+  fetch_interval: "5m"    # Email fetch interval
+  forward_interval: "2m"  # Email forward interval
+
+# Email Processing Configuration
+email:
+  forward_keywords: ["urgent", "important", "priority"]
+  max_retries: 3
+
+# Logging Configuration
+log:
+  level: "info"
+  format: "text"  # text or json 
