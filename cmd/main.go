@@ -76,9 +76,19 @@ func RunServer(c *cli.Context, mailApp *app.App) error {
 	forwardTargetsRepo := db.NewForwardTargetsRepo(gDatabase.DB)
 
 	// 启动定时任务
-	scheduler := schedule.NewScheduler(gmailClient, forwardTargetsRepo)
+	schedulerConfig := schedule.SchedulerConfig{}
+	err = mailApp.Config().UnmarshalKey("scheduler", &schedulerConfig)
+	if err != nil {
+		logrus.Errorf("failed to unmarshal scheduler config: %v", err)
+	}
+
+	// 打印配置信息用于调试
+	logrus.Infof("Scheduler config: %+v", schedulerConfig)
+
+	scheduler := schedule.NewScheduler(&schedulerConfig, gmailClient, forwardTargetsRepo)
 	if err := scheduler.Start(); err != nil {
 		logrus.Errorf("failed to start scheduler: %v", err)
+		return err
 	} else {
 		logrus.Info("scheduler started successfully")
 	}

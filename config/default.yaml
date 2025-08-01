@@ -15,8 +15,7 @@ gmail:
 
 # Scheduler Configuration
 scheduler:
-  fetch_interval: "5m"    # Email fetch interval
-  forward_interval: "2m"  # Email forward interval
+  fetch_interval: "0 */1 * * * *"    # Email fetch interval (every minute)
 
 # Email Processing Configuration
 email:
