@@ -53,7 +53,7 @@ mail-handle/
 1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
 2. 创建新项目或选择现有项目
 3. 启用Gmail API
-4. 创建OAuth2.0凭证
+4. 创建OAuth2.0凭证, 重定向 URI: http://localhost:8082/api/v1/oauth/callback
 5. 下载凭证文件，重命名为 `gmail-credentials.json` 并放到 `config/` 目录
 
 ### 3. 配置数据库
