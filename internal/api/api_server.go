@@ -1,4 +1,4 @@
-package internal
+package api
 
 import (
 	"time"
@@ -45,6 +45,7 @@ func (a *ApiServer) setupRoutes() {
 	oauth := v1.Group("/oauth")
 	{
 		oauth.GET("/callback", a.GetGoogleOauth)
+		oauth.GET("/auth", a.GetGoogleOauthURL)
 	}
 }
 
@@ -55,4 +56,10 @@ func (a *ApiServer) GetGoogleOauth(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"message": "success"})
+}
+
+func (a *ApiServer) GetGoogleOauthURL(c *gin.Context) {
+	url := a.oauthCallback.GetAuthURL()
+	// 重定向到授权链接
+	c.Redirect(302, url)
 }

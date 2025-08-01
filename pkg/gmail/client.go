@@ -2,18 +2,11 @@ package gmail
 
 import (
 	"context"
+
+	"github.com/helloworldyuhaiyang/mail-handle/internal/mail"
 )
 
 type Client struct {
-}
-
-type Email struct {
-	ID      string
-	Subject string
-	From    string
-	To      string
-	Body    string
-	Date    string
 }
 
 func NewClient(ctx context.Context, credentialsFile, tokenFile string) (*Client, error) {
@@ -34,17 +27,18 @@ func (c *Client) Callback(code string) error {
 	return nil
 }
 
-// 获取所有指定关键字邮件
-func (c *Client) GetAllEmail(ctx context.Context, keyword string) ([]Email, error) {
-	return nil, nil
+func (c *Client) FetchUnreadMessages() ([]*mail.Message, error) {
+	panic("not implemented") // TODO: Implement
 }
 
-// 转发邮件
-func (c *Client) ForwardEmail(ctx context.Context, emailID string, to string) error {
-	return nil
+func (c *Client) ParseSubject(subject string) (keyword string, targetName string, ok bool) {
+	panic("not implemented") // TODO: Implement
 }
 
-// 标记邮件为已读
-func (c *Client) MarkEmailAsRead(ctx context.Context, emailID string) error {
-	return nil
+func (c *Client) SendForward(original *mail.Message, toEmail string) error {
+	panic("not implemented") // TODO: Implement
+}
+
+func (c *Client) MarkAsRead(messageID string) error {
+	panic("not implemented") // TODO: Implement
 }

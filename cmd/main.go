@@ -6,7 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/helloworldyuhaiyang/mail-handle/internal"
+	"github.com/helloworldyuhaiyang/mail-handle/internal/api"
+	"github.com/helloworldyuhaiyang/mail-handle/internal/db"
+	"github.com/helloworldyuhaiyang/mail-handle/internal/schedule"
 	"github.com/helloworldyuhaiyang/mail-handle/pkg/app"
 	"github.com/helloworldyuhaiyang/mail-handle/pkg/data"
 	"github.com/helloworldyuhaiyang/mail-handle/pkg/gmail"
@@ -34,13 +36,13 @@ func main() {
 
 func RunServer(c *cli.Context, mailApp *app.App) error {
 	// 初始化数据库
-	db, err := initDatabase(mailApp)
+	gDatabase, err := initDatabase(mailApp)
 	if err != nil {
 		logrus.Error("init database failed", err)
 		return err
 	}
 	defer func() {
-		if err := db.Close(); err != nil {
+		if err := gDatabase.Close(); err != nil {
 			logrus.Errorf("failed to close database: %v", err)
 		}
 	}()
@@ -58,7 +60,7 @@ func RunServer(c *cli.Context, mailApp *app.App) error {
 	}()
 
 	// 启动 api server
-	apiServer := internal.NewApiServer(mailApp.Config().GetString("server.addr"), db, gmailClient)
+	apiServer := api.NewApiServer(mailApp.Config().GetString("server.addr"), gDatabase, gmailClient)
 	if err := apiServer.Start(); err != nil {
 		logrus.Errorf("api server error: %v", err)
 	} else {
@@ -70,8 +72,11 @@ func RunServer(c *cli.Context, mailApp *app.App) error {
 		}
 	}()
 
+	// db 初始化
+	forwardTargetsRepo := db.NewForwardTargetsRepo(gDatabase.DB)
+
 	// 启动定时任务
-	scheduler := internal.NewScheduler()
+	scheduler := schedule.NewScheduler(gmailClient, forwardTargetsRepo)
 	if err := scheduler.Start(); err != nil {
 		logrus.Errorf("failed to start scheduler: %v", err)
 	} else {
