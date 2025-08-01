@@ -24,6 +24,11 @@ func (c *Client) Close() error {
 	return nil
 }
 
+// 获取授权链接
+func (c *Client) GetAuthURL() string {
+	return ""
+}
+
 // 完成 oauth2.0
 func (c *Client) Callback(code string) error {
 	return nil

@@ -10,6 +10,7 @@ import (
 )
 
 type OAuthCallback interface {
+	GetAuthURL() string
 	Callback(code string) error
 }
 

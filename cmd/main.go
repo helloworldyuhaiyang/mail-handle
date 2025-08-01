@@ -45,7 +45,7 @@ func RunServer(c *cli.Context, mailApp *app.App) error {
 		}
 	}()
 
-	// 初始化 Gmail client
+	// 初始化 gmail client
 	gmailClient, err := initGmailClient(mailApp)
 	if err != nil {
 		logrus.Error("init gmail client failed", err)
