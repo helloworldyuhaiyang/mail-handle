@@ -1,13 +1,16 @@
 # Mail Handle System Configuration
 
+# Server Configuration
+server:
+  port: 8080
+
 # Database Configuration
 database:
-  driver: "sqlite"
-  dsn: "mail_handle.db"
+  dsn: "root:@tcp(127.0.0.1:3306)/mail_handle?charset=utf8mb4&parseTime=True&loc=Local"
 
 # Gmail API Configuration
 gmail:
-  credentials_file: "credentials.json"
+  credentials_file: "./config/gmail-credentials.json"
   token_file: "token.json"
 
 # Scheduler Configuration
