@@ -225,7 +225,7 @@ if [ ! -f "dist/config/gmail-credentials.json" ]; then
     echo "- 首次使用需要等待几分钟才能生效"
     echo ""
     
-    wait_for_input "准备好 gmail-credentials.json 文件后按 Enter 继续" 60 "y"
+    wait_for_input "准备好 gmail-credentials.json 文件后按 Enter 继续" 300 "y"
     
     if [ ! -f "dist/config/gmail-credentials.json" ]; then
         print_error "Gmail 凭证文件仍未找到。请添加文件后重新运行脚本。"
