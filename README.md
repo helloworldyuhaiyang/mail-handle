@@ -19,6 +19,11 @@ mail-handle/
 │   └── main.go            # 主程序，包含run和auth命令
 ├── config/                 # 配置文件
 │   └── default.yaml       # 默认配置（服务器、数据库、Gmail等）
+├── deploy/                 # 部署相关文件
+│   ├── setup.sh           # 自动化部署脚本
+│   ├── docker-compose.yaml # Docker编排文件
+│   ├── Dockerfile         # Docker镜像构建文件
+│   └── env.example        # 环境变量示例
 ├── internal/              # 内部业务逻辑
 │   ├── api/              # HTTP API服务
 │   ├── db/               # 数据库操作
@@ -40,7 +45,75 @@ mail-handle/
   - `run`: 启动邮件处理服务
   - `auth`: Gmail OAuth2认证
 
-## 快速开始
+## 快速体验 (推荐)
+
+使用自动化部署脚本快速体验项目，无需手动配置环境：
+
+### 前置要求
+
+确保系统已安装：
+- **Go 1.23+** - 用于构建应用程序
+- **Docker** - 用于容器化部署
+- **Docker Compose** - 用于多容器编排
+
+### 一键部署
+
+1. **克隆项目**
+```bash
+git clone <repository-url>
+cd mail-handle
+```
+
+2. **运行部署脚本**
+```bash
+cd deploy
+chmod +x setup.sh
+./setup.sh
+```
+
+3. **获取Gmail API凭证**
+脚本会引导您完成Gmail API凭证的获取：
+- 访问 [Google Cloud Console](https://console.cloud.google.com/)
+- 创建项目并启用Gmail API
+- 创建OAuth2.0凭证，重定向URI: `http://localhost:8082/api/v1/oauth/callback`
+- 下载凭证文件并重命名为 `gmail-credentials.json`
+- 将文件放到 `deploy/dist/config/` 目录
+
+4. **完成Gmail认证**
+部署完成后，访问认证URL完成Gmail授权：
+```
+http://localhost:8082/api/v1/oauth/auth
+```
+
+### 部署后的服务
+
+- **Gmail认证**: http://localhost:8082/api/v1/oauth/auth
+
+### 常用命令
+
+```bash
+# 查看应用日志
+docker-compose logs -f mail-handle
+
+# 停止服务
+docker-compose down
+
+# 重启服务
+docker-compose restart
+
+# 查看服务状态
+docker-compose ps
+```
+
+### 配置自定义
+
+编辑 `deploy/.env` 文件来自定义配置：
+- 数据库密码
+- 邮件检查频率
+- 转发关键词
+- 日志级别等
+
+## 快速开始开发
 
 ### 1. 环境准备
 
