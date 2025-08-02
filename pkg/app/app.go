@@ -97,11 +97,24 @@ func (a *App) Start() error {
 			a.log.Warnf("Config file not found: %s, using environment variables", a.opt.ConfigAddress)
 		}
 
-		// 支持环境变量覆盖配置
-		a.vConfig.AutomaticEnv()
-		// 绑定常用 key，支持下划线转小数点
-		a.vConfig.SetEnvKeyReplacer(strings.NewReplacer("_", "."))
+		// 支持环境变量覆盖配置, 绑定常用 key，支持下划线转小数点
 		// 例如 REDIS_ADDR -> redis.addr
+		a.vConfig.SetEnvKeyReplacer(strings.NewReplacer("_", "."))
+		a.vConfig.AutomaticEnv()
+
+		// 手动绑定环境变量到配置键
+		a.vConfig.BindEnv("database.dsn", "DATABASE_DSN")
+		a.vConfig.BindEnv("gmail.credentials_file", "GMAIL_CREDENTIALS_FILE")
+		a.vConfig.BindEnv("gmail.token_file", "GMAIL_TOKEN_FILE")
+		a.vConfig.BindEnv("server.addr", "SERVER_ADDR")
+		a.vConfig.BindEnv("scheduler.fetch_interval", "SCHEDULER_FETCH_INTERVAL")
+		a.vConfig.BindEnv("scheduler.forward_keywords", "SCHEDULER_FORWARD_KEYWORDS")
+		a.vConfig.BindEnv("log.level", "LOG_LEVEL")
+		a.vConfig.BindEnv("log.format", "LOG_FORMAT")
+
+		// 添加调试日志
+		a.log.Infof("Environment DATABASE_DSN: %s", os.Getenv("DATABASE_DSN"))
+		a.log.Infof("Viper database.dsn: %s", a.vConfig.GetString("database.dsn"))
 
 		// 读日志
 		logLevel := c.String("log.level")

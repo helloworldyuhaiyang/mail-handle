@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/helloworldyuhaiyang/mail-handle/internal"
 	"github.com/helloworldyuhaiyang/mail-handle/internal/api"
 	"github.com/helloworldyuhaiyang/mail-handle/internal/db"
 	"github.com/helloworldyuhaiyang/mail-handle/internal/schedule"
@@ -17,6 +18,8 @@ import (
 )
 
 func main() {
+	internal.ShowInfo()
+
 	mailApp := app.NewApp("mail-handle", "handle mail from gmail")
 	mailApp.Init(
 		app.WithCommands([]*cli.Command{
@@ -171,7 +174,14 @@ type GmailConfig struct {
 }
 
 func initDatabase(mailApp *app.App) (*data.DB, error) {
-	db, err := data.NewDB(mailApp.Config().GetString("database.dsn"))
+	// 优先使用环境变量，如果环境变量不存在则使用配置文件
+	dsn := os.Getenv("DATABASE_DSN")
+	if dsn == "" {
+		dsn = mailApp.Config().GetString("database.dsn")
+	}
+	logrus.Infof("Database DSN: %s", dsn)
+
+	db, err := data.NewDB(dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +191,24 @@ func initDatabase(mailApp *app.App) (*data.DB, error) {
 
 // initGmailClient initializes the Gmail client
 func initGmailClient(mailApp *app.App) (*gmail.Client, error) {
-	var gmailConfig GmailConfig
-	err := mailApp.Config().UnmarshalKey("gmail", &gmailConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal gmail config: %v", err)
+	// 优先使用环境变量，如果环境变量不存在则使用配置文件
+	credentialsFile := os.Getenv("GMAIL_CREDENTIALS_FILE")
+	tokenFile := os.Getenv("GMAIL_TOKEN_FILE")
+
+	if credentialsFile == "" {
+		var gmailConfig GmailConfig
+		err := mailApp.Config().UnmarshalKey("gmail", &gmailConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal gmail config: %v", err)
+		}
+		credentialsFile = gmailConfig.CredentialsFile
+		tokenFile = gmailConfig.TokenFile
 	}
 
-	gmailClient, err := gmail.NewClient(context.Background(), gmailConfig.CredentialsFile, gmailConfig.TokenFile)
+	logrus.Infof("Gmail credentials file: %s", credentialsFile)
+	logrus.Infof("Gmail token file: %s", tokenFile)
+
+	gmailClient, err := gmail.NewClient(context.Background(), credentialsFile, tokenFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize Gmail client: %v", err)
 	}
